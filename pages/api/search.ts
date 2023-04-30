@@ -4,13 +4,9 @@ import { Client } from "pg";
 //   runtime: "edge"
 // };
 
-const handler = async (req: Request): Promise<Response> => {
+const handler = async (req: any, response: any): Promise<Response> => {
   try {
-    const { query, apiKey, matches } = (await req.json()) as {
-      query: string;
-      apiKey: string;
-      matches: number;
-    };
+    const { query, apiKey, matches } = req.body as any;
 
     const input = query.replace(/\n/g, " ");
 
@@ -40,25 +36,20 @@ const handler = async (req: Request): Promise<Response> => {
     try {
       const query1 = {
         text: 'SELECT * FROM pg_search($1, $2, $3)',
-        values: [embedding, 0.01, matches],
+        values: [JSON.stringify(embedding), 0.01, matches],
       };
       const result = await pgClient.query(query1);
-      return new Response(JSON.stringify(result.rows), { status: 200 });
+      return response.status(200).json(result.rows);
     } catch (error) {
       console.error(error);
-      return new Response("Error", { status: 500 });
+      return response.status(500);
     } finally {
       await pgClient.end();
     }
 
-    // const { data: chunks, error } = await supabaseAdmin.rpc("pg_search", {
-    //   query_embedding: embedding,
-    //   similarity_threshold: 0.01,
-    //   match_count: matches
-    // });
   } catch (error) {
     console.error(error);
-    return new Response("Error", { status: 500 });
+      return response.status(500);
   }
 };
 
